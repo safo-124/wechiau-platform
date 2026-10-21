@@ -1,0 +1,1 @@
+ALTER TABLE `message` ADD `photo_uri` text;

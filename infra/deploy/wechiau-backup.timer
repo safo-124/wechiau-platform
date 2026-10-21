@@ -1,0 +1,11 @@
+# Nightly Wechiau backup at 02:30 UTC (02:30 in Ghana). Installed by setup-vps.sh.
+[Unit]
+Description=Nightly Wechiau backup
+
+[Timer]
+OnCalendar=*-*-* 02:30:00 UTC
+RandomizedDelaySec=10m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,343 @@
+/* Colours and sizes come from @wechiau/ui/theme through applyTheme.ts. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--dashboard-bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: var(--size-body);
+  line-height: 1.45;
+}
+
+a {
+  color: var(--green);
+}
+
+a:hover {
+  color: var(--green-pressed);
+}
+
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.sidebar {
+  flex: 1 1 220px;
+  max-width: 100%;
+  background: var(--white);
+  border-right: 1px solid var(--divider);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Side by side with the page (wide screens): the menu stays put while the page scrolls.
+   On narrow screens it sits above the page and scrolls with it. */
+@media (min-width: 800px) {
+  .sidebar {
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    height: 100vh;
+    overflow-y: auto;
+  }
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  padding: 0 10px 18px;
+}
+
+.brand-name {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--green);
+}
+
+.brand-sub {
+  font-size: var(--size-small);
+  color: var(--text-muted);
+}
+
+.nav-link {
+  min-height: 44px;
+  border-radius: 10px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  text-decoration: none;
+  color: #3b4a40;
+}
+
+.nav-link.active {
+  background: var(--green-tint);
+  color: var(--green);
+}
+
+.main {
+  flex: 999 1 560px;
+  min-width: 0;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.page-title {
+  margin: 0;
+  font-size: var(--size-page-title);
+}
+
+.page-sub {
+  color: var(--text-muted);
+}
+
+.card {
+  border-radius: 14px;
+  background: var(--white);
+  border: 1px solid var(--divider);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card h2 {
+  margin: 0;
+  font-size: var(--size-section-title);
+}
+
+.status {
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.status-good {
+  background: var(--green-tint);
+  color: var(--green);
+}
+
+.status-coming-up {
+  background: var(--amber-tint);
+  color: var(--amber);
+}
+
+.status-problem {
+  background: var(--red-tint);
+  color: var(--red);
+}
+
+.status-neutral {
+  background: var(--neutral-tint);
+  color: var(--text-neutral);
+}
+
+.status-title {
+  font-weight: 700;
+}
+
+.status-detail {
+  font-size: var(--size-small);
+}
+
+.button {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--size-body);
+  font-weight: 700;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.button:hover {
+  border-color: var(--green);
+}
+
+/* ── Shared pieces ─────────────────────────────────────────────────── */
+
+.muted { color: var(--text-muted); }
+.small { font-size: var(--size-small); }
+.strong { font-weight: 700; }
+.red { color: var(--red); }
+.green { color: var(--green); }
+.amber { color: var(--amber); }
+.right { text-align: right; }
+.centered { text-align: center; margin-top: 20vh; color: var(--text-muted); }
+.error { color: var(--red); font-weight: 700; margin: 0; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.spread { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+
+.row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.column { display: flex; flex-direction: column; gap: 16px; }
+.grow-1 { flex: 1 1 280px; min-width: 0; }
+.grow-2 { flex: 2 1 420px; min-width: 0; }
+.grow-3 { flex: 3 1 560px; min-width: 0; }
+
+.card-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
+
+.button.primary { background: var(--green); color: var(--white); border-color: var(--green); }
+.button.primary:hover { background: var(--green-pressed); }
+.button.saved { background: var(--green-tint); color: var(--green); border-color: var(--green-strong); }
+.button.small { min-height: 36px; padding: 0 12px; font-size: var(--size-small); }
+.button:disabled { opacity: 0.55; cursor: default; }
+a.button { display: inline-flex; align-items: center; text-decoration: none; }
+
+.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--text-muted); }
+.field.narrow { max-width: 360px; }
+.field input, .field select, .password-form input, td select {
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  padding: 0 12px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--text);
+  background: var(--white);
+}
+td select { min-height: 40px; }
+.select-problem { border-color: var(--red) !important; color: var(--red) !important; }
+.check { display: flex; gap: 10px; align-items: center; min-height: 44px; }
+.check input { width: 20px; height: 20px; }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.inline-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; padding: 14px; border-radius: 12px; background: var(--neutral-tint); }
+.password-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* Stat cards (design: Overview, Money). */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; }
+.stat {
+  border-radius: 14px;
+  background: var(--white);
+  border: 1px solid var(--divider);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  font-family: inherit;
+  color: var(--text);
+}
+button.stat { cursor: pointer; }
+button.stat:hover { border-color: var(--green); }
+.stat-label { font-size: 14px; color: var(--text-muted); }
+.stat-value { font-size: var(--size-card-number); font-weight: 700; }
+.stat-value small { font-size: 16px; font-weight: 400; color: var(--text-muted); }
+.stat-sub { font-size: var(--size-small); color: var(--text-muted); }
+.stat-problem { background: var(--red-tint); border-color: #f0c6bf; color: var(--red); }
+.stat-problem .stat-label, .stat-problem .stat-sub { color: var(--red); }
+.stat-good { background: var(--green); color: var(--white); border-color: var(--green); }
+.stat-good .stat-label, .stat-good .stat-sub { color: var(--white); }
+
+.progress { height: 8px; border-radius: 4px; background: var(--green-tint); overflow: hidden; }
+.progress > div { height: 8px; background: var(--green-strong); border-radius: 4px; }
+
+/* Crates per week (design: Overview). */
+.bars { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 24px; align-items: end; height: 220px; border-bottom: 1px solid var(--border); padding: 0 12px; }
+.bar { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.bar-value { font-size: 14px; font-weight: 700; }
+.bar-fill { width: 100%; border-radius: 6px 6px 0 0; background: var(--egg-button); }
+.bar-label { font-size: var(--size-small); color: var(--text-muted); margin-bottom: -26px; }
+
+/* Tags and notices. Red is for problems only; amber for coming up or owed. */
+.pill { display: inline-block; font-size: var(--size-small); font-weight: 700; border-radius: 8px; padding: 4px 8px; }
+.pill-problem, .notice-problem { background: var(--red-tint); color: var(--red); }
+.pill-comingUp, .notice-comingUp { background: var(--amber-tint); color: var(--amber); }
+.pill-good, .notice-good { background: var(--green-tint); color: var(--green); }
+.pill-money, .notice-money { background: var(--blue-tint); color: var(--blue); }
+.pill-neutral, .notice-neutral { background: var(--neutral-tint); color: var(--text-neutral); }
+.notice { border-radius: 10px; padding: 12px 14px; font-size: var(--size-body); }
+.attention { display: block; width: 100%; text-align: left; border: none; border-radius: 10px; padding: 10px; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { min-height: 40px; padding: 0 14px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--white); color: var(--green); font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.chip-on { background: var(--green); color: var(--white); border-color: var(--green); }
+
+/* Tables (design: Farmers, Health, Money, Settings). */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; min-width: 620px; border-collapse: collapse; font-size: 15px; }
+th { text-align: left; color: var(--text-muted); font-size: 13px; font-weight: 700; padding: 10px 8px; border-bottom: 1px solid var(--divider); }
+td { padding: 12px 8px; border-bottom: 1px solid var(--divider-light); vertical-align: top; }
+th.right, td.right { text-align: right; }
+
+.list-item { display: flex; flex-direction: column; gap: 4px; padding-bottom: 10px; border-bottom: 1px solid var(--divider-light); }
+.list-item:last-child { border-bottom: none; }
+.workload { display: flex; flex-direction: column; gap: 6px; }
+.rounds { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.round { display: flex; flex-direction: column; gap: 8px; }
+
+.sign-out { margin-top: auto; border: none; background: none; font-family: inherit; cursor: pointer; text-align: left; }
+
+/* Sign-in page. */
+.signin { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.signin-card { width: 100%; max-width: 420px; gap: 14px; }
+
+/* Monthly report (Reports page). */
+.field textarea {
+  min-height: 240px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  padding: 12px;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--white);
+  resize: vertical;
+}
+.figures { margin: 0; display: flex; flex-direction: column; }
+.figures > div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--divider-light); }
+.figures > div:last-child { border-bottom: none; }
+.figures dt { margin: 0; }
+.figures dd { margin: 0; font-weight: 700; white-space: nowrap; }
+.report-text p { margin: 0 0 12px; }
+.print-only { display: none; }
+
+/* Printing (and "Save as PDF"): the report without the menu and buttons. */
+@media print {
+  @page { margin: 14mm; }
+  body { background: #fff; }
+  .sidebar, .no-print { display: none !important; }
+  .print-only { display: block; }
+  .main { padding: 0; gap: 14px; }
+  .card, .stat { border: 1px solid #c8c8c8; break-inside: avoid; }
+  .stat-good, .stat-problem { background: #fff; color: inherit; }
+  .stat-good .stat-label, .stat-good .stat-sub, .stat-problem .stat-label, .stat-problem .stat-sub { color: inherit; }
+  table { min-width: 0; }
+}
+
+/* A farmer's new PIN (Settings, People), shown once. */
+.pin-notice { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.pin { font-size: 34px; letter-spacing: 6px; }
+
+/* Messages from farmers (Health). */
+.conversation-row { text-decoration: none; color: inherit; border-radius: 8px; padding: 10px 8px; }
+.conversation-row:hover { background: var(--neutral-tint); }
+.back-link { font-weight: 700; text-decoration: none; align-self: flex-start; }
+.thread { display: flex; flex-direction: column; gap: 12px; }
+.bubble { max-width: 75%; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.bubble p { margin: 0; }
+.bubble-farmer { align-self: flex-start; background: var(--neutral-tint); border-bottom-left-radius: 4px; }
+.bubble-team { align-self: flex-end; background: var(--green-tint); border-bottom-right-radius: 4px; }
+.bubble-photo { max-width: 260px; border-radius: 10px; display: block; }
+.voice { display: flex; flex-direction: column; gap: 4px; }
+.voice audio { max-width: 280px; height: 40px; }
+.transcript { font-style: italic; }

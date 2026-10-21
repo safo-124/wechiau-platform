@@ -1,0 +1,43 @@
+{
+  "name": "wechiau-platform",
+  "private": true,
+  "description": "Wechiau Poultry Platform: field, vet and farmer apps, web dashboard and sync server",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "build:shared": "npm run build -w @wechiau/shared",
+    "dev:server": "npm run start:dev -w @wechiau/server",
+    "dev:web": "npm run dev -w @wechiau/web",
+    "dev:field": "npm run start:field -w @wechiau/mobile",
+    "dev:vet": "npm run start:vet -w @wechiau/mobile",
+    "dev:farmer": "npm run start:farmer -w @wechiau/mobile",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build:shared && npm run build -w @wechiau/server && npm run build -w @wechiau/web",
+    "release": "node infra/deploy/build-release.mjs",
+    "postinstall": "npm run build:shared && npm run db:generate",
+    "db:setup": "node infra/setup-dev-db.mjs",
+    "db:migrate": "npm run prisma:migrate -w @wechiau/server",
+    "db:generate": "npm run prisma:generate -w @wechiau/server",
+    "db:seed": "npm run db:seed -w @wechiau/server"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  },
+  "overrides": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "allowScripts": {
+    "prisma@7.10.1": true,
+    "@prisma/engines@7.10.1": true,
+    "esbuild@0.18.20": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.2": true
+  }
+}

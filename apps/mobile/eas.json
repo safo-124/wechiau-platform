@@ -1,0 +1,36 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "base": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "autoIncrement": true
+    },
+    "field-preview": {
+      "extends": "base",
+      "env": {
+        "APP_VARIANT": "field",
+        "EXPO_PUBLIC_API_URL": "https://wechiau.135.181.93.156.nip.io/api"
+      }
+    },
+    "vet-preview": {
+      "extends": "base",
+      "env": {
+        "APP_VARIANT": "vet",
+        "EXPO_PUBLIC_API_URL": "https://wechiau.135.181.93.156.nip.io/api"
+      }
+    },
+    "farmer-preview": {
+      "extends": "base",
+      "env": {
+        "APP_VARIANT": "farmer",
+        "EXPO_PUBLIC_API_URL": "https://wechiau.135.181.93.156.nip.io/api"
+      }
+    }
+  }
+}

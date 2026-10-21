@@ -1,0 +1,703 @@
+// Wechiau Poultry Platform: server database.
+//
+// Mirrors the table schemas in packages/shared (spec addendum v0.4, section 4).
+// Column names are snake_case and match the sync API and the phones' SQLite.
+//
+// Every synced table has the same sync columns. Timestamps come from the
+// device that made the change, so they have no @default(now()) or @updatedAt.
+// Money is whole pesewas (Int): GHS 40.00 is 4000.
+// `recorded_by` is a user id; it is checked by the server, not a foreign key.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── Enums ──────────────────────────────────────────────────────────────
+
+enum Role {
+  admin
+  field_agent
+  vet
+  farmer
+}
+
+enum UserStatus {
+  invited
+  active
+  disabled
+}
+
+enum Language {
+  dga
+  wlx
+  eng
+}
+
+enum FarmerStatus {
+  active
+  inactive
+}
+
+enum BirdCountKind {
+  reported
+  verified
+}
+
+enum BirdCountSource {
+  registration
+  visit
+  vaccination
+  farmer_app
+  voice_line
+}
+
+enum BuyerType {
+  wholesaler
+  hotel
+  school
+}
+
+enum Fund {
+  egg
+  vaccine
+}
+
+enum LedgerSource {
+  collection
+  sale_payment
+  vaccine_payment
+  vaccine_purchase
+  grant
+  adjustment
+}
+
+enum StockReason {
+  received
+  used
+  wasted
+  adjustment
+}
+
+enum StockSource {
+  vaccination
+  cold_chain_reading
+}
+
+enum ReadingPlace {
+  pickup
+  storage
+  farm
+}
+
+enum TriageLevel {
+  low
+  medium
+  urgent
+}
+
+enum CaseChannel {
+  app
+  voice
+  visit
+}
+
+enum CaseStatus {
+  open
+  closed
+}
+
+enum MessageDirection {
+  from_farmer
+  to_farmer
+}
+
+enum MessageKind {
+  voice
+  text
+  notice
+}
+
+enum MessageDelivery {
+  app
+  sms
+  call
+}
+
+enum SmsStatus {
+  queued
+  sent
+  failed
+}
+
+enum ReportStatus {
+  draft
+  approved
+  sent
+}
+
+// ── People ─────────────────────────────────────────────────────────────
+
+model User {
+  id          String     @id @db.Uuid
+  created_at  DateTime   @db.Timestamptz(3)
+  updated_at  DateTime   @db.Timestamptz(3)
+  deleted_at  DateTime?  @db.Timestamptz(3)
+  device_id   String
+  recorded_by String?    @db.Uuid
+  name        String
+  phone       String     @unique
+  email       String?    @unique
+  role        Role
+  farmer_id   String?    @unique @db.Uuid
+  status      UserStatus
+  /// Server only. Never sent to phones or the dashboard.
+  password_hash String?
+
+  farmer Farmer? @relation(fields: [farmer_id], references: [id])
+
+  @@map("user")
+}
+
+model Farmer {
+  id                  String       @id @db.Uuid
+  created_at          DateTime     @db.Timestamptz(3)
+  updated_at          DateTime     @db.Timestamptz(3)
+  deleted_at          DateTime?    @db.Timestamptz(3)
+  device_id           String
+  recorded_by         String?      @db.Uuid
+  name                String
+  phone               String
+  language            Language
+  lat                 Float?
+  lng                 Float?
+  digital_address     String?
+  landmark            String?
+  joined_on           DateTime     @db.Date
+  status              FarmerStatus
+  consent_training    Boolean
+  consent_recorded_at DateTime?    @db.Timestamptz(3)
+
+  user              User?
+  vet_assignments   VetAssignment[]
+  visits            Visit[]
+  bird_counts       BirdCount[]
+  collections       Collection[]
+  vaccinations      Vaccination[]
+  cold_readings     ColdChainReading[]
+  vaccine_payments  VaccinePayment[]
+  health_cases      HealthCase[]
+  messages          Message[]
+
+  @@map("farmer")
+}
+
+/// Append only. A farmer's current vet is their latest row.
+model VetAssignment {
+  id          String    @id @db.Uuid
+  created_at  DateTime  @db.Timestamptz(3)
+  updated_at  DateTime  @db.Timestamptz(3)
+  deleted_at  DateTime? @db.Timestamptz(3)
+  device_id   String
+  recorded_by String?   @db.Uuid
+  farmer_id   String    @db.Uuid
+  vet_id      String    @db.Uuid
+  assigned_at DateTime  @db.Timestamptz(3)
+
+  farmer Farmer @relation(fields: [farmer_id], references: [id])
+
+  @@index([farmer_id, assigned_at])
+  @@index([vet_id])
+  @@map("vet_assignment")
+}
+
+// ── Farm records ───────────────────────────────────────────────────────
+
+/// Append only.
+model Visit {
+  id              String    @id @db.Uuid
+  created_at      DateTime  @db.Timestamptz(3)
+  updated_at      DateTime  @db.Timestamptz(3)
+  deleted_at      DateTime? @db.Timestamptz(3)
+  device_id       String
+  recorded_by     String?   @db.Uuid
+  farmer_id       String    @db.Uuid
+  visited_at      DateTime  @db.Timestamptz(3)
+  deaths          Int
+  suspected_cause String?
+  notes           String?
+  photo_uri       String?
+
+  farmer Farmer @relation(fields: [farmer_id], references: [id])
+
+  @@index([farmer_id, visited_at])
+  @@map("visit")
+}
+
+/// Append only. Reported and verified counts are separate rows.
+model BirdCount {
+  id          String          @id @db.Uuid
+  created_at  DateTime        @db.Timestamptz(3)
+  updated_at  DateTime        @db.Timestamptz(3)
+  deleted_at  DateTime?       @db.Timestamptz(3)
+  device_id   String
+  recorded_by String?         @db.Uuid
+  farmer_id   String          @db.Uuid
+  count       Int
+  kind        BirdCountKind
+  source_type BirdCountSource
+  source_id   String?         @db.Uuid
+  counted_at  DateTime        @db.Timestamptz(3)
+
+  farmer Farmer @relation(fields: [farmer_id], references: [id])
+
+  @@index([farmer_id, kind, counted_at])
+  @@map("bird_count")
+}
+
+// ── Eggs and money ─────────────────────────────────────────────────────
+
+model Collection {
+  id              String    @id @db.Uuid
+  created_at      DateTime  @db.Timestamptz(3)
+  updated_at      DateTime  @db.Timestamptz(3)
+  deleted_at      DateTime? @db.Timestamptz(3)
+  device_id       String
+  recorded_by     String?   @db.Uuid
+  farmer_id       String    @db.Uuid
+  collected_at    DateTime  @db.Timestamptz(3)
+  crates          Int
+  price_per_crate Int
+  amount_paid     Int
+  receipt_sms_id  String?   @db.Uuid
+
+  farmer Farmer @relation(fields: [farmer_id], references: [id])
+
+  @@index([farmer_id, collected_at])
+  @@index([recorded_by])
+  @@map("collection")
+}
+
+model Buyer {
+  id          String    @id @db.Uuid
+  created_at  DateTime  @db.Timestamptz(3)
+  updated_at  DateTime  @db.Timestamptz(3)
+  deleted_at  DateTime? @db.Timestamptz(3)
+  device_id   String
+  recorded_by String?   @db.Uuid
+  name        String
+  type        BuyerType
+  phone       String?
+  location    String?
+
+  sales Sale[]
+
+  @@map("buyer")
+}
+
+/// Received and owed amounts are calculated from SalePayment rows.
+model Sale {
+  id              String    @id @db.Uuid
+  created_at      DateTime  @db.Timestamptz(3)
+  updated_at      DateTime  @db.Timestamptz(3)
+  deleted_at      DateTime? @db.Timestamptz(3)
+  device_id       String
+  recorded_by     String?   @db.Uuid
+  buyer_id        String    @db.Uuid
+  sold_at         DateTime  @db.Timestamptz(3)
+  crates          Int
+  price_per_crate Int
+  due_on          DateTime? @db.Date
+
+  buyer    Buyer         @relation(fields: [buyer_id], references: [id])
+  payments SalePayment[]
+
+  @@index([buyer_id, sold_at])
+  @@map("sale")
+}
+
+/// Append only.
+model SalePayment {
+  id          String    @id @db.Uuid
+  created_at  DateTime  @db.Timestamptz(3)
+  updated_at  DateTime  @db.Timestamptz(3)
+  deleted_at  DateTime? @db.Timestamptz(3)
+  device_id   String
+  recorded_by String?   @db.Uuid
+  sale_id     String    @db.Uuid
+  amount      Int
+  received_at DateTime  @db.Timestamptz(3)
+
+  sale Sale @relation(fields: [sale_id], references: [id])
+
+  @@index([sale_id])
+  @@map("sale_payment")
+}
+
+/// Append only. Money only. Balances are sums of these rows, never stored.
+model LedgerEntry {
+  id          String       @id @db.Uuid
+  created_at  DateTime     @db.Timestamptz(3)
+  updated_at  DateTime     @db.Timestamptz(3)
+  deleted_at  DateTime?    @db.Timestamptz(3)
+  device_id   String
+  recorded_by String?      @db.Uuid
+  fund        Fund
+  amount      Int
+  source_type LedgerSource
+  source_id   String?      @db.Uuid
+  note        String?
+
+  @@index([fund, created_at])
+  @@index([source_type, source_id])
+  @@index([recorded_by])
+  @@map("ledger_entry")
+}
+
+/// Append only. Cash moving between people; does not change the fund total.
+model CashHandover {
+  id           String    @id @db.Uuid
+  created_at   DateTime  @db.Timestamptz(3)
+  updated_at   DateTime  @db.Timestamptz(3)
+  deleted_at   DateTime? @db.Timestamptz(3)
+  device_id    String
+  recorded_by  String?   @db.Uuid
+  from_user_id String    @db.Uuid
+  to_user_id   String    @db.Uuid
+  amount       Int
+  handed_at    DateTime  @db.Timestamptz(3)
+
+  @@index([from_user_id])
+  @@index([to_user_id])
+  @@map("cash_handover")
+}
+
+/// Append only. A person counting the cash they hold.
+model CashCount {
+  id          String    @id @db.Uuid
+  created_at  DateTime  @db.Timestamptz(3)
+  updated_at  DateTime  @db.Timestamptz(3)
+  deleted_at  DateTime? @db.Timestamptz(3)
+  device_id   String
+  recorded_by String?   @db.Uuid
+  expected    Int
+  counted     Int
+  note        String?
+  counted_at  DateTime  @db.Timestamptz(3)
+
+  @@index([recorded_by, counted_at])
+  @@map("cash_count")
+}
+
+// ── Vaccines and cold chain ────────────────────────────────────────────
+
+model VaccinationRound {
+  id             String    @id @db.Uuid
+  created_at     DateTime  @db.Timestamptz(3)
+  updated_at     DateTime  @db.Timestamptz(3)
+  deleted_at     DateTime? @db.Timestamptz(3)
+  device_id      String
+  recorded_by    String?   @db.Uuid
+  number         Int
+  date           DateTime  @db.Date
+  is_free        Boolean
+  /// Copied from Settings by the server when the round first syncs.
+  price_per_dose Int?
+
+  vaccinations     Vaccination[]
+  cold_readings    ColdChainReading[]
+  vaccine_payments VaccinePayment[]
+
+  @@map("vaccination_round")
+}
+
+model Vaccination {
+  id               String    @id @db.Uuid
+  created_at       DateTime  @db.Timestamptz(3)
+  updated_at       DateTime  @db.Timestamptz(3)
+  deleted_at       DateTime? @db.Timestamptz(3)
+  device_id        String
+  recorded_by      String?   @db.Uuid
+  farmer_id        String    @db.Uuid
+  round_id         String    @db.Uuid
+  vet_id           String    @db.Uuid
+  batch_id         String    @db.Uuid
+  birds_vaccinated Int
+  farm_reading_id  String?   @unique @db.Uuid
+  vaccinated_at    DateTime  @db.Timestamptz(3)
+
+  farmer       Farmer            @relation(fields: [farmer_id], references: [id])
+  round        VaccinationRound  @relation(fields: [round_id], references: [id])
+  batch        VaccineBatch      @relation(fields: [batch_id], references: [id])
+  farm_reading ColdChainReading? @relation(fields: [farm_reading_id], references: [id])
+
+  @@index([farmer_id, round_id])
+  @@map("vaccination")
+}
+
+model VaccineBatch {
+  id           String    @id @db.Uuid
+  created_at   DateTime  @db.Timestamptz(3)
+  updated_at   DateTime  @db.Timestamptz(3)
+  deleted_at   DateTime? @db.Timestamptz(3)
+  device_id    String
+  recorded_by  String?   @db.Uuid
+  batch_no     String
+  vaccine_name String
+  expiry_on    DateTime  @db.Date
+  received_at  DateTime  @db.Timestamptz(3)
+
+  vaccinations  Vaccination[]
+  stock_entries VaccineStockEntry[]
+
+  @@map("vaccine_batch")
+}
+
+/// Append only. Doses left is the sum of `doses`.
+model VaccineStockEntry {
+  id          String       @id @db.Uuid
+  created_at  DateTime     @db.Timestamptz(3)
+  updated_at  DateTime     @db.Timestamptz(3)
+  deleted_at  DateTime?    @db.Timestamptz(3)
+  device_id   String
+  recorded_by String?      @db.Uuid
+  batch_id    String       @db.Uuid
+  doses       Int
+  reason      StockReason
+  source_type StockSource?
+  source_id   String?      @db.Uuid
+
+  batch VaccineBatch @relation(fields: [batch_id], references: [id])
+
+  @@index([batch_id])
+  @@map("vaccine_stock_entry")
+}
+
+/// Append only.
+model ColdChainReading {
+  id          String       @id @db.Uuid
+  created_at  DateTime     @db.Timestamptz(3)
+  updated_at  DateTime     @db.Timestamptz(3)
+  deleted_at  DateTime?    @db.Timestamptz(3)
+  device_id   String
+  recorded_by String?      @db.Uuid
+  temp_c      Float
+  place       ReadingPlace
+  farmer_id   String?      @db.Uuid
+  round_id    String?      @db.Uuid
+  read_at     DateTime     @db.Timestamptz(3)
+
+  farmer      Farmer?           @relation(fields: [farmer_id], references: [id])
+  round       VaccinationRound? @relation(fields: [round_id], references: [id])
+  vaccination Vaccination?
+
+  @@index([read_at])
+  @@map("cold_chain_reading")
+}
+
+/// Append only. Recorded by operations, never by vets.
+model VaccinePayment {
+  id          String    @id @db.Uuid
+  created_at  DateTime  @db.Timestamptz(3)
+  updated_at  DateTime  @db.Timestamptz(3)
+  deleted_at  DateTime? @db.Timestamptz(3)
+  device_id   String
+  recorded_by String?   @db.Uuid
+  farmer_id   String    @db.Uuid
+  round_id    String    @db.Uuid
+  amount      Int
+  paid_at     DateTime  @db.Timestamptz(3)
+
+  farmer Farmer           @relation(fields: [farmer_id], references: [id])
+  round  VaccinationRound @relation(fields: [round_id], references: [id])
+
+  @@index([farmer_id, round_id])
+  @@map("vaccine_payment")
+}
+
+// ── Health ─────────────────────────────────────────────────────────────
+
+model HealthCase {
+  id                  String       @id @db.Uuid
+  created_at          DateTime     @db.Timestamptz(3)
+  updated_at          DateTime     @db.Timestamptz(3)
+  deleted_at          DateTime?    @db.Timestamptz(3)
+  device_id           String
+  recorded_by         String?      @db.Uuid
+  farmer_id           String       @db.Uuid
+  channel             CaseChannel
+  /// Set by the AI step on the server. Advisory only.
+  triage_suggested    TriageLevel?
+  /// Set only by a vet.
+  triage              TriageLevel?
+  triage_confirmed_by String?      @db.Uuid
+  assigned_vet_id     String?      @db.Uuid
+  status              CaseStatus
+  diagnosis           String?
+  treatment           String?
+  follow_up_on        DateTime?    @db.Date
+  closed_at           DateTime?    @db.Timestamptz(3)
+
+  farmer   Farmer     @relation(fields: [farmer_id], references: [id])
+  messages Message[]
+  notes    CaseNote[]
+
+  @@index([status, triage])
+  @@index([farmer_id])
+  @@index([assigned_vet_id])
+  @@map("health_case")
+}
+
+/// Append only. The vets' history of a case: one row per decision.
+model CaseNote {
+  id             String    @id @db.Uuid
+  created_at     DateTime  @db.Timestamptz(3)
+  updated_at     DateTime  @db.Timestamptz(3)
+  deleted_at     DateTime? @db.Timestamptz(3)
+  device_id      String
+  recorded_by    String?   @db.Uuid
+  health_case_id String    @db.Uuid
+  kind           String
+  body           String
+
+  health_case HealthCase @relation(fields: [health_case_id], references: [id])
+
+  @@index([health_case_id, created_at])
+  @@map("case_note")
+}
+
+/// Append only. All voice audio lives here.
+model Message {
+  id             String           @id @db.Uuid
+  created_at     DateTime         @db.Timestamptz(3)
+  updated_at     DateTime         @db.Timestamptz(3)
+  deleted_at     DateTime?        @db.Timestamptz(3)
+  device_id      String
+  recorded_by    String?          @db.Uuid
+  farmer_id      String           @db.Uuid
+  health_case_id String?          @db.Uuid
+  direction      MessageDirection
+  sender_id      String?          @db.Uuid
+  kind           MessageKind
+  body           String?
+  audio_uri      String?
+  audio_seconds  Int?
+  /// Filled by the server after sync.
+  transcript     String?
+  translation    String?
+  delivery       MessageDelivery
+  /// "upload:<id>" of a photo sent with the message.
+  photo_uri      String?
+
+  farmer      Farmer      @relation(fields: [farmer_id], references: [id])
+  health_case HealthCase? @relation(fields: [health_case_id], references: [id])
+
+  @@index([farmer_id, created_at])
+  @@index([health_case_id])
+  @@map("message")
+}
+
+// ── System ─────────────────────────────────────────────────────────────
+
+model SmsOutbox {
+  id          String    @id @db.Uuid
+  created_at  DateTime  @db.Timestamptz(3)
+  updated_at  DateTime  @db.Timestamptz(3)
+  deleted_at  DateTime? @db.Timestamptz(3)
+  device_id   String
+  recorded_by String?   @db.Uuid
+  to_phone    String
+  body        String
+  status      SmsStatus
+  attempts    Int
+
+  @@index([status])
+  @@map("sms_outbox")
+}
+
+/// One row per setting key; the value is checked against that key's schema in packages/shared.
+model Setting {
+  id          String    @id @db.Uuid
+  created_at  DateTime  @db.Timestamptz(3)
+  updated_at  DateTime  @db.Timestamptz(3)
+  deleted_at  DateTime? @db.Timestamptz(3)
+  device_id   String
+  recorded_by String?   @db.Uuid
+  key         String    @unique
+  value       Json
+
+  @@map("setting")
+}
+
+/// The monthly funder summary. Dashboard only.
+model MonthlyReport {
+  id          String       @id @db.Uuid
+  created_at  DateTime     @db.Timestamptz(3)
+  updated_at  DateTime     @db.Timestamptz(3)
+  deleted_at  DateTime?    @db.Timestamptz(3)
+  device_id   String
+  recorded_by String?      @db.Uuid
+  month       String       @unique
+  draft_text  String
+  final_text  String?
+  status      ReportStatus
+  approved_by String?      @db.Uuid
+  approved_at DateTime?    @db.Timestamptz(3)
+
+  @@map("monthly_report")
+}
+
+// ── Server only (never synced) ─────────────────────────────────────────
+
+/// A signed-in device. The phone keeps the token in secure storage; only its hash is stored here.
+model Session {
+  id           String    @id @default(uuid()) @db.Uuid
+  token_hash   String    @unique
+  user_id      String    @db.Uuid
+  /// "device" (phone apps, 180 days from last use) or "dashboard" (browser, 12 hours from last use).
+  kind         String    @default("device")
+  device_id    String
+  created_at   DateTime  @default(now()) @db.Timestamptz(3)
+  last_used_at DateTime  @default(now()) @db.Timestamptz(3)
+  expires_at   DateTime  @db.Timestamptz(3)
+  revoked_at   DateTime? @db.Timestamptz(3)
+
+  @@index([user_id])
+  @@map("session")
+}
+
+/// A stored file (visit photos; later voice notes). The file itself is on disk in UPLOADS_DIR.
+/// Who may fetch it follows who may read the record that points at it.
+model Upload {
+  id           String   @id @db.Uuid
+  table_name   String
+  row_id       String   @db.Uuid
+  content_type String
+  size_bytes   Int
+  sha256       String
+  uploaded_by  String   @db.Uuid
+  created_at   DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([table_name, row_id])
+  @@map("upload")
+}
+
+/// Every accepted change, in order. Phones pull from here with a cursor (`seq`).
+/// Writes take a lock so rows commit in `seq` order and no pull can skip one.
+model ChangeLog {
+  seq        BigInt   @id @default(autoincrement())
+  table_name String
+  row_id     String   @db.Uuid
+  op         String
+  device_id  String
+  changed_at DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([table_name, row_id])
+  @@map("change_log")
+}

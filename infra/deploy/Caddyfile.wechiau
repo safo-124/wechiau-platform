@@ -1,0 +1,46 @@
+# BEGIN wechiau (added by Wechiau's setup-vps.sh; running it again replaces this block)
+@SITE@ {
+	encode zstd gzip
+
+	# Visit photos and sync batches are each up to 5 MB.
+	request_body {
+		max_size 8MB
+	}
+
+	# The API: sync for the phones, and the dashboard's data.
+	handle /api/* {
+		reverse_proxy 127.0.0.1:@PORT@
+	}
+
+	# Built files have the content's fingerprint in their names, so they can be
+	# kept for a year; the page itself is checked again each time.
+	@assets path /assets/*
+	@pages not path /api/* /assets/*
+
+	# The dashboard's built files. Other paths get index.html, and the page picks them up.
+	handle {
+		root * /opt/wechiau/current/apps/web/dist
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		header @pages Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	log {
+		output file /var/log/caddy/wechiau.log {
+			roll_size 20MiB
+			roll_keep 5
+		}
+		format json
+	}
+}
+# END wechiau

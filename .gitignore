@@ -1,0 +1,23 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.DS_Store
+
+# Secrets and local settings. Commit only the .env.example files.
+.env
+.env.*
+!.env.example
+
+# Prisma generated client
+apps/server/src/generated/
+
+# Logs
+npm-debug.log*
+*.log
+
+# Uploaded files on a developer laptop
+apps/server/uploads/
+
+# Release archives for the VPS (npm run release)
+release/

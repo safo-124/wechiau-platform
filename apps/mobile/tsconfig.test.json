@@ -1,0 +1,12 @@
+{
+  // Used only by Vitest's transformer, which can't follow `extends: "expo/tsconfig.base"`.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "jsx": "react-jsx",
+    "verbatimModuleSyntax": false
+  },
+  "include": ["src/**/*.test.ts"]
+}

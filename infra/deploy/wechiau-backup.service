@@ -1,0 +1,18 @@
+# Backs up the Wechiau database and uploaded photos. Started by wechiau-backup.timer and by deploy.sh.
+[Unit]
+Description=Back up the Wechiau database and uploaded photos
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=wechiau
+Group=wechiau
+EnvironmentFile=/etc/wechiau/wechiau.env
+ExecStart=/bin/bash /opt/wechiau/current/infra/deploy/backup.sh
+# Readable by the wechiau group, so an admin in that group can copy backups off the server.
+UMask=0027
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/backups/wechiau
+PrivateTmp=yes

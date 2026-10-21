@@ -1,0 +1,43 @@
+# Wechiau API (sync for the phones, data for the dashboard). Installed by setup-vps.sh.
+[Unit]
+Description=Wechiau Poultry API server
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=wechiau
+Group=wechiau
+EnvironmentFile=/etc/wechiau/wechiau.env
+WorkingDirectory=/opt/wechiau/current/apps/server
+ExecStart=@NODE@ --max-old-space-size=256 dist/main.js
+Restart=on-failure
+RestartSec=5
+
+# The VPS is shared with other apps: a memory leak here can't starve them.
+MemoryHigh=350M
+MemoryMax=450M
+
+# The service can write only its uploads folder.
+UMask=0027
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/wechiau
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target
